@@ -3,12 +3,17 @@ services:
     build:
       context: .
       dockerfile: services/ai-service/Dockerfile
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     networks:
       - instatags-net
   api-gateway:
     build:
       context: .
       dockerfile: services/api-gateway/Dockerfile
+    ports:
+      - "8000:8000"
     depends_on:
       - ai-service
     environment:

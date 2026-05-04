@@ -15,27 +15,26 @@ import (
 )
 
 func (h *Gateway) PredictHashtags(c *gin.Context) {
-	// Parsing uploaded image
+	
 	file, _, err := c.Request.FormFile("image")
 
-	// Error handling untuk file upload
+	
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Image file is required"})
 		return
 	}
 	defer file.Close()
 
-	// Read file
+	
 	buf := bytes.NewBuffer(nil)
 	if _, err := io.Copy(buf, file); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read image file"})
 		return
 	}
 
-	// Call service AI
-	// resp, err := h.AIClient.PredictHashtags(c.Request.Context(), &pbAI.PredictRequest{
-	// 	ImageData: buf.Bytes(),
-	// })
+	
+	
+	
 	result, err := h.CB.Execute(func() (interface{}, error) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 20*time.Second)
 		defer cancel()
@@ -45,17 +44,14 @@ func (h *Gateway) PredictHashtags(c *gin.Context) {
 		})
 	})
 
-	// Error handling
 	if err != nil {
 		log.Printf("AI Service Error: %v", err)
 
-		// Check if the Circuit is "Open" (Broken/Stopping traffic)
 		if err == gobreaker.ErrOpenState {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Service unavaible, try again later"})
 			return
 		}
 
-		// Check if it was the 20s timeout
 		if errors.Is(err, context.DeadlineExceeded) {
 			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
 			return
@@ -65,7 +61,6 @@ func (h *Gateway) PredictHashtags(c *gin.Context) {
 		return
 	}
 
-	// 5. SUCCESS
 	resp, ok := result.(*pbAI.PredictResponse)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal type error"})

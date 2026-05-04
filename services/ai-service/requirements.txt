@@ -1,6 +1,7 @@
 grpcio==1.59.0
 grpcio-tools==1.59.0
-torch==2.1.0 --index-url https://download.pytorch.org/whl/cpu
-torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cpu
+torch==2.1.0
+torchvision==0.16.0
 Pillow
 numpy<2.0
+transformers==4.41.2

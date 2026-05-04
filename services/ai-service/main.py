@@ -1,81 +1,70 @@
 import grpc
 from concurrent import futures
-import torch
-import torch.nn as nn
-from torchvision import models, transforms
-from PIL import Image
 import io
-import os
+
+import torch
+import torch.nn.functional as F
+from transformers import CLIPModel, CLIPProcessor
+from PIL import Image
 
 import ai_pb2 as service_pb2
 import ai_pb2_grpc as service_pb2_grpc
 
-MODEL_PATH = "./.model/hashtag_model.pth"
-TAGS_PATH = "./.model/tags.txt"
+INDEX_PATH = "./.model/clip_index.pt"
+CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
 DEVICE = torch.device("cpu")
 
 class AIService(service_pb2_grpc.AIServiceServicer):
     def __init__(self):
         print("Initializing AI Service...")
-        self.tags = self.load_tags()
         self.model = self.load_model()
-        
-        self.transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
+        self.processor = CLIPProcessor.from_pretrained(CLIP_MODEL_ID, local_files_only=True)
+        self.text_embeddings, self.tags = self.load_index()
         print("AI Service Ready.")
 
-    def load_tags(self):
-        try:
-            with open(TAGS_PATH, "r") as f:
-                return [line.strip() for line in f.readlines()]
-        except FileNotFoundError:
-            print("CRITICAL ERROR: tags.txt not found!")
-            return []
-
     def load_model(self):
-        model = models.resnet18(pretrained=False)
-        num_ftrs = model.fc.in_features
-        
-        model.fc = nn.Sequential(
-            nn.Linear(num_ftrs, 512),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(512, len(self.tags))
-        )
-        
         try:
-            model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
-            model.to(DEVICE)
+            model = CLIPModel.from_pretrained(CLIP_MODEL_ID, local_files_only=True).to(DEVICE)
             model.eval()
             return model
         except Exception as e:
-            print(f"CRITICAL ERROR: Failed to load model weights: {e}")
+            print(f"CRITICAL ERROR: Failed to load CLIP model: {e}")
             return None
 
+    def load_index(self):
+        try:
+            data = torch.load(INDEX_PATH, map_location=DEVICE)
+            embeddings = data["embeddings"].to(DEVICE)
+            tags = data["tags"]
+            embeddings = F.normalize(embeddings, dim=-1)
+            print("Loaded index:", embeddings.shape)
+            return embeddings, tags
+        except FileNotFoundError:
+            print("CRITICAL ERROR: clip_index.pt not found!")
+            return None, []
+        except Exception as e:
+            print(f"CRITICAL ERROR: Failed to load index: {e}")
+            return None, []
+
     def PredictHashtags(self, request, context):
-        if self.model is None:
+        if self.model is None or self.text_embeddings is None:
             context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details('Model not loaded correctly')
+            context.set_details('Model or index not loaded correctly')
             return service_pb2.PredictResponse()
 
         try:
-            image = Image.open(io.BytesIO(request.image_data)).convert('RGB')
-            tensor = self.transform(image).unsqueeze(0).to(DEVICE)
+            image = Image.open(io.BytesIO(request.image_data)).convert("RGB")
+            inputs = self.processor(images=image, return_tensors="pt").to(DEVICE)
 
             with torch.no_grad():
-                outputs = self.model(tensor)
-                probs = torch.sigmoid(outputs)
+                image_features = self.model.get_image_features(**inputs)
+            image_features = F.normalize(image_features, dim=-1)
 
-            recommended = []
-            probs_np = probs.cpu().numpy()[0]
-            
-            for i, prob in enumerate(probs_np):
-                if prob > 0.3: 
-                    recommended.append(self.tags[i])
+            sims = (image_features @ self.text_embeddings.T).squeeze(0)
+            top_k = min(10, sims.shape[0])
+            top_indices = sims.topk(top_k).indices
 
+            recommended = [self.tags[idx] for idx in top_indices.tolist()]
             return service_pb2.PredictResponse(hashtags=recommended)
 
         except Exception as e:
