@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	pbAI "github.com/RarityValue/img-getter-chrome-ext/protos/ai"
+	pbAI "github.com/sanguine59/img-getter-chrome-ext/protos/ai"
 	"github.com/sony/gobreaker"
 )
 

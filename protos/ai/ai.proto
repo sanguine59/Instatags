@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package ai;
 
-option go_package = "github.com/RarityValue/img-getter-chrome-ext/ai";
+option go_package = "github.com/sanguine59/img-getter-chrome-ext/ai";
 
 service AIService {
   rpc PredictHashtags (PredictRequest) returns (PredictResponse);

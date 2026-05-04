@@ -1,4 +1,4 @@
-module github.com/RarityValue/img-getter-chrome-ext
+module github.com/sanguine59/img-getter-chrome-ext
 
 go 1.25.6
 

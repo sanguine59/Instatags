@@ -120,7 +120,7 @@ const file_ai_proto_rawDesc = "" +
 	"\x0fPredictResponse\x12\x1a\n" +
 	"\bhashtags\x18\x01 \x03(\tR\bhashtags2G\n" +
 	"\tAIService\x12:\n" +
-	"\x0fPredictHashtags\x12\x12.ai.PredictRequest\x1a\x13.ai.PredictResponseB1Z/github.com/RarityValue/img-getter-chrome-ext/aib\x06proto3"
+	"\x0fPredictHashtags\x12\x12.ai.PredictRequest\x1a\x13.ai.PredictResponseB1Z/github.com/sanguine59/img-getter-chrome-ext/aib\x06proto3"
 
 var (
 	file_ai_proto_rawDescOnce sync.Once

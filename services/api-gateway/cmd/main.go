@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pbAI "github.com/RarityValue/img-getter-chrome-ext/protos/ai"
-	"github.com/RarityValue/img-getter-chrome-ext/services/api-gateway/internal/handlers"
+	pbAI "github.com/sanguine59/img-getter-chrome-ext/protos/ai"
+	"github.com/sanguine59/img-getter-chrome-ext/services/api-gateway/internal/handlers"
 	"github.com/sony/gobreaker"
 )
 
