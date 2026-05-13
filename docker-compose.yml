@@ -1,4 +1,14 @@
 services:
+  frontend:
+    build:
+      context: ./FrontEnd
+      dockerfile: Dockerfile
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    networks:
+      - instatags-net
+
   ai-service:
     build:
       context: .
